@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Truth or Dare</title>
+<style>
+  :root {
+    --bg: #1a1722;
+    --bg-card: #241f30;
+    --pink: #ff3d7f;
+    --yellow: #ffd23f;
+    --teal: #3ddad7;
+    --text: #f5f0ff;
+    --text-dim: #9d93b3;
+    --truth-color: #3ddad7;
+    --dare-color: #ff3d7f;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(255,61,127,0.12), transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(61,218,215,0.10), transparent 40%);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 480px;
+  }
+
+  h1.logo {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-weight: 900;
+    font-style: italic;
+    font-size: 3rem;
+    text-align: center;
+    letter-spacing: -1px;
+    margin-bottom: 4px;
+    line-height: 1;
+  }
+  h1.logo span:first-child { color: var(--truth-color); }
+  h1.logo span:last-child { color: var(--dare-color); }
+  h1.logo .or {
+    font-style: normal;
+    font-weight: 400;
+    font-size: 1.4rem;
+    color: var(--text-dim);
+    vertical-align: middle;
+    padding: 0 6px;
+  }
+
+  .tagline {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    margin-bottom: 32px;
+    letter-spacing: 0.5px;
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .card {
+    background: var(--bg-card);
+    border-radius: 18px;
+    padding: 28px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+  }
+
+  .mode-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .mode-btn {
+    background: var(--bg-card);
+    border: 2px solid transparent;
+    border-radius: 16px;
+    padding: 28px 16px;
+    color: var(--text);
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+    text-align: center;
+  }
+  .mode-btn .icon { font-size: 2rem; display: block; margin-bottom: 10px; }
+  .mode-btn:hover { transform: translateY(-3px); border-color: var(--yellow); }
+  .mode-btn:nth-child(1):hover { border-color: var(--teal); }
+  .mode-btn:nth-child(2):hover { border-color: var(--pink); }
+
+  .section-title {
+    font-size: 1.4rem;
+    font-weight: 800;
+    margin-bottom: 18px;
+  }
+
+  label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .player-input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    background: var(--bg);
+    border: 2px solid #3a3450;
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+  input[type="text"]:focus { border-color: var(--teal); }
+
+  .icon-btn {
+    background: var(--bg);
+    border: 2px solid #3a3450;
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 1.3rem;
+    width: 46px;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+  }
+  .icon-btn:hover { border-color: var(--pink); }
+
+  .player-list {
+    list-style: none;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .player-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.95rem;
+  }
+  .player-list li button {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0;
+    line-height: 1;
+  }
+  .player-list li button:hover { color: var(--pink); }
+
+  .empty-hint {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 12px 0;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .btn {
+    flex: 1;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.1s ease, opacity 0.15s ease;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--pink), #ff7a3d);
+    color: #1a1722;
+  }
+  .btn-primary:disabled {
+    background: #3a3450;
+    color: var(--text-dim);
+    cursor: not-allowed;
+  }
+  .btn-secondary {
+    background: transparent;
+    border: 2px solid #3a3450;
+    color: var(--text-dim);
+  }
+  .btn-secondary:hover { border-color: var(--teal); color: var(--text); }
+
+  /* Game screen */
+  .current-player {
+    text-align: center;
+    color: var(--yellow);
+    font-weight: 800;
+    font-size: 1.2rem;
+    margin-bottom: 18px;
+    letter-spacing: 0.5px;
+    min-height: 1.5em;
+  }
+
+  .choice-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .choice-btn {
+    border: none;
+    border-radius: 16px;
+    padding: 30px 10px;
+    font-size: 1.3rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    color: #1a1722;
+  }
+  .choice-btn:hover { transform: translateY(-3px); }
+  .choice-btn.truth { background: var(--truth-color); box-shadow: 0 6px 20px rgba(61,218,215,0.3); }
+  .choice-btn.dare { background: var(--dare-color); box-shadow: 0 6px 20px rgba(255,61,127,0.3); }
+
+  .prompt-card {
+    background: var(--bg);
+    border-radius: 16px;
+    padding: 36px 24px;
+    text-align: center;
+    min-height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+    border: 2px solid #3a3450;
+    animation: pop 0.35s ease;
+  }
+  @keyframes pop {
+    from { transform: scale(0.92); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .prompt-card.truth-bg { border-color: var(--truth-color); }
+  .prompt-card.dare-bg { border-color: var(--dare-color); }
+
+  .prompt-label {
+    position: absolute;
+  }
+
+  .prompt-text {
+    font-family: Georgia, serif;
+    font-size: 1.25rem;
+    line-height: 1.4;
+    font-weight: 700;
+  }
+
+  .prompt-tag {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 100px;
+    margin-bottom: 14px;
+  }
+  .prompt-tag.truth { background: rgba(61,218,215,0.15); color: var(--truth-color); }
+  .prompt-tag.dare { background: rgba(255,61,127,0.15); color: var(--dare-color); }
+
+  .prompt-wrap { display: flex; flex-direction: column; align-items: center; }
+
+  .back-link {
+    display: block;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin-top: 18px;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .back-link:hover { color: var(--text); }
+
+  .intensity-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .intensity-btn {
+    background: var(--bg);
+    border: 2px solid #3a3450;
+    border-radius: 16px;
+    padding: 24px 14px;
+    color: var(--text);
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+    text-align: center;
+  }
+  .intensity-btn .icon { font-size: 1.8rem; display: block; margin-bottom: 8px; }
+  .intensity-btn .sub {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+  .intensity-btn:hover { transform: translateY(-3px); }
+  .intensity-btn.normal:hover { border-color: var(--teal); }
+  .intensity-btn.extreme:hover { border-color: var(--pink); }
+  .intensity-btn.selected.normal { border-color: var(--teal); background: rgba(61,218,215,0.08); }
+  .intensity-btn.selected.extreme { border-color: var(--pink); background: rgba(255,61,127,0.08); }
+
+  .mode-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 100px;
+    margin-bottom: 14px;
+  }
+  .mode-badge.normal { background: rgba(61,218,215,0.15); color: var(--truth-color); }
+  .mode-badge.extreme { background: rgba(255,61,127,0.15); color: var(--dare-color); }
+  .badge-row { text-align: center; }
+
+  @media (max-width: 380px) {
+    h1.logo { font-size: 2.3rem; }
+    .card { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <h1 class="logo"><span>Truth</span><span class="or">or</span><span>Dare</span></h1>
+  <p class="tagline">pick your poison</p>
+
+  <!-- SCREEN 1: Mode Select -->
+  <div class="screen active" id="screen-mode">
+    <div class="card">
+      <div class="section-title">How are you playing?</div>
+      <div class="mode-grid">
+        <button class="mode-btn" onclick="selectMode('solo')">
+          <span class="icon">🎯</span>
+          Solo
+        </button>
+        <button class="mode-btn" onclick="selectMode('group')">
+          <span class="icon">👥</span>
+          Group
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 0: Intensity Select -->
+  <div class="screen" id="screen-intensity">
+    <div class="card">
+      <div class="section-title">Choose your level</div>
+      <div class="intensity-grid">
+        <button class="intensity-btn normal" onclick="selectIntensity('normal')">
+          <span class="icon">😄</span>
+          Normal
+          <span class="sub">Fun &amp; lighthearted</span>
+        </button>
+        <button class="intensity-btn extreme" onclick="selectIntensity('extreme')">
+          <span class="icon">🔥</span>
+          Extreme
+          <span class="sub">Bold &amp; spicy</span>
+        </button>
+      </div>
+      <div class="back-link" onclick="goBackFromIntensity()">Back</div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: Group Setup -->
+  <div class="screen" id="screen-setup">
+    <div class="card">
+      <div class="section-title">Who's playing?</div>
+      <label for="player-name">Add a player</label>
+      <div class="player-input-row">
+        <input type="text" id="player-name" placeholder="Enter a name" maxlength="20" onkeydown="if(event.key==='Enter'){addPlayer()}">
+        <button class="icon-btn" onclick="addPlayer()" aria-label="Add player">+</button>
+      </div>
+      <ul class="player-list" id="player-list"></ul>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goTo('mode')">Back</button>
+        <button class="btn btn-primary" id="start-group-btn" disabled onclick="goToIntensityFromSetup()">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: Game -->
+  <div class="screen" id="screen-game">
+    <div class="card">
+      <div class="badge-row">
+        <span class="mode-badge" id="game-intensity-badge"></span>
+      </div>
+      <div class="current-player" id="current-player"></div>
+
+      <div class="choice-grid" id="choice-grid">
+        <button class="choice-btn truth" onclick="showPrompt('truth')">Truth</button>
+        <button class="choice-btn dare" onclick="showPrompt('dare')">Dare</button>
+      </div>
+
+      <div class="prompt-card" id="prompt-card" style="display:none;">
+        <div class="prompt-wrap">
+          <span class="prompt-tag" id="prompt-tag"></span>
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <div class="btn-row" id="next-row" style="display:none;">
+        <button class="btn btn-primary" onclick="nextTurn()">Next turn</button>
+      </div>
+
+      <div class="back-link" onclick="goTo('mode')">Quit game</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---------- Data ----------
+  const truthsNormal = [
+    "What's the most embarrassing thing you've ever Googled?",
+    "What's a secret you've never told your parents?",
+    "Who in this room would you trust with your phone unlocked for a day?",
+    "What's the weirdest dream you've ever had?",
+    "What's your most irrational fear?",
+    "What's the last lie you told?",
+    "What's a habit you have that you hope no one notices?",
+    "If you could swap lives with anyone in this room for a day, who would it be and why?",
+    "What's the most childish thing you still do?",
+    "What's a rumor you've heard about yourself?",
+    "What's the worst gift you've ever received?",
+    "What's something you pretend to like but actually hate?",
+    "What's the most trouble you've ever gotten into?",
+    "Who was your first crush?",
+    "What's your guilty pleasure TV show or song?",
+    "What's the cringiest thing you've posted online?",
+    "What's a talent you have that nobody knows about?",
+    "What's the longest you've gone without showering?",
+    "What's something you've never admitted out loud until now?",
+    "What's the most awkward date you've ever been on?",
+    "If everyone in this room could hear your inner thoughts for one minute, what would they hear?",
+    "What's a food combination you love that grosses people out?",
+    "What's the silliest thing you've cried about?",
+    "Have you ever pretended to be sick to get out of something?",
+    "What's the most embarrassing nickname you've ever had?",
+    "What app do you spend way too much time on?",
+    "What's something you do when you're alone that you'd never do in public?",
+    "What's the worst haircut you've ever had?",
+    "Who do you think is most likely to become famous in this room?",
+    "What's a small thing that instantly annoys you?"
+  ];
+
+  const daresNormal = [
+    "Do your best impression of someone else in the room.",
+    "Talk in an accent for the next 3 rounds.",
+    "Let someone else send a text from your phone (group chooses what it says).",
+    "Do 10 push-ups right now.",
+    "Sing the chorus of your most-played song.",
+    "Try to lick your elbow.",
+    "Let the group give you a new nickname for the rest of the game.",
+    "Speak only in questions until your next turn.",
+    "Do your best dance move for 15 seconds.",
+    "Let someone draw something on your hand with a pen.",
+    "Act like a chicken for 30 seconds.",
+    "Say the alphabet backwards as fast as you can.",
+    "Do an impression of a baby for 20 seconds.",
+    "Let the group pick an emoji — you have to use only that emoji to respond for the next 5 minutes.",
+    "Try to make the person to your left laugh without touching them.",
+    "Hold a one-minute conversation while maintaining a straight face.",
+    "Do your best superhero pose and hold it for 10 seconds.",
+    "Swap a piece of clothing with someone for the rest of the round.",
+    "Tell a joke — if no one laughs, do another dare.",
+    "Walk like a robot until your next turn.",
+    "Let someone style your hair however they want for 2 minutes.",
+    "Do an impression of how you think a cat would order coffee.",
+    "Balance something on your head for 30 seconds.",
+    "Speak in rhymes for your next 2 turns.",
+    "Do your best red-carpet pose for a photo.",
+    "Try to whistle a song so others can guess it.",
+    "Let the group choose your profile picture for the next hour (with permission).",
+    "Do 10 jumping jacks while saying your full name.",
+    "Pretend to be a news reporter and give a report on something happening in the room right now.",
+    "Imitate the way a famous celebrity might walk."
+  ];
+
+  const truthsExtreme = [
+    "What's the most embarrassing thing you've ever done to impress someone you liked?",
+    "Who's the last person you stalked on social media, and why?",
+    "What's a secret you're keeping from someone in this room right now?",
+    "What's the most awkward thing that's ever happened to you on a date?",
+    "What's something you've said behind a friend's back that you'd never say to their face?",
+    "What's the most embarrassing thing in your search history right now?",
+    "Have you ever liked someone in this room? Who?",
+    "What's the worst thing you've ever done and gotten away with?",
+    "What's a white lie you've told someone in this room?",
+    "Who's the last person you texted that you probably shouldn't have?",
+    "What's the most embarrassing photo on your phone right now?",
+    "Have you ever pretended to be someone else online?",
+    "What's the cringiest thing you've done to get someone's attention?",
+    "What's a secret talent or hobby you're too embarrassed to share?",
+    "Who do you think has the biggest crush on someone in this room?",
+    "What's the most petty reason you've ever been mad at someone?",
+    "What's something about yourself you'd change if no one would judge you?",
+    "What's the worst thing you've ever said about someone, and did they find out?",
+    "What's a rumor about yourself that's actually true?",
+    "Have you ever read someone else's messages without permission?",
+    "What's the most embarrassing voicemail or text you've ever sent?",
+    "Who would you swap places with for a day, even if it ruined your reputation?",
+    "What's something you do that you'd be mortified if your crush found out about?",
+    "What's the boldest thing you've ever done to get someone to notice you?",
+    "What's a secret nickname you have for someone in this room?",
+    "What's the most awkward interaction you've had with someone here?",
+    "Have you ever faked liking a gift or gesture from someone here?",
+    "What's something you've lied about to make yourself look better?",
+    "Who in this room do you think gossips the most, and what have they said?",
+    "What's the most embarrassing thing your parents have caught you doing?"
+  ];
+
+  const daresExtreme = [
+    "Let the group go through your camera roll for 30 seconds.",
+    "Call a friend and sing them happy birthday, even if it isn't their birthday.",
+    "Let the group write your next social media post (you have to post it).",
+    "Do an impression of everyone in the room, one by one.",
+    "Show the group the last photo you took.",
+    "Let someone read your last 3 text messages out loud.",
+    "Re-enact your most embarrassing memory as a silent film.",
+    "Let the group pick your ringtone for the next 24 hours.",
+    "Prank call someone and stay in character for one full minute.",
+    "Post an embarrassing old photo to your story for 10 minutes.",
+    "Let the group ask your crush (or partner) a question via text, and read the reply out loud.",
+    "Do your best 'breakup speech' to a household object.",
+    "Confess your most embarrassing childhood memory to the group.",
+    "Let someone in the group give you a new nickname that you must use for the rest of the night.",
+    "Show the group the weirdest thing in your bag or pockets.",
+    "Do an over-the-top dramatic reading of your last text conversation.",
+    "Let the group choose an outfit from your closet that you have to wear for the rest of the game.",
+    "Reveal the last thing you Googled.",
+    "Send a voice message to the group chat doing your worst singing.",
+    "Do a dramatic monologue confessing your 'love' to a piece of furniture.",
+    "Let the group draw a temporary tattoo design on your arm with a pen.",
+    "Tell the group about your most embarrassing fashion phase, with photo evidence if you have it.",
+    "Do your impression of how the person to your right talks and acts.",
+    "Let someone scroll your phone's autocorrect/suggested words and read the top 5 out loud.",
+    "Act out your worst date ever, playing both roles.",
+    "Let the group pick a filter or sticker for your next profile picture.",
+    "Reveal a text you've drafted but never sent — and who it was for.",
+    "Do your best impression of a celebrity crying.",
+    "Let the group rename one of your apps and you can't change it back tonight.",
+    "Confess the pettiest thing you've ever done out of jealousy."
+  ];
+
+  // ---------- Generator data (for near-endless prompts) ----------
+  // These slot-filling templates combine with topic/action/object lists to
+  // produce thousands of unique combinations beyond the curated lists above.
+
+  const genTopicsNormal = [
+    "your weirdest habit", "a food you secretly love", "your most-used app",
+    "a place you'd love to visit", "your favorite childhood memory",
+    "a movie you've watched way too many times", "something that always makes you laugh",
+    "a skill you wish you had", "your go-to comfort snack", "a song stuck in your head right now",
+    "the last show you binge-watched", "a hobby you gave up on",
+    "your dream job as a kid", "something you're surprisingly good at",
+    "a class you wish you'd taken", "your favorite way to waste time",
+    "a smell that brings back memories", "the last thing that made you nervous",
+    "your go-to karaoke song", "a fictional character you relate to",
+    "your favorite season and why", "a small thing that makes your day better",
+    "the last compliment you received", "a tradition your family has",
+    "your most-used emoji", "something you collect or used to collect",
+    "your ideal lazy Sunday", "a place that feels like home to you",
+    "your favorite thing about this group", "the last new thing you tried"
+  ];
+
+  const genTopicsExtreme = [
+    "a secret you're keeping right now", "the last person you texted late at night",
+    "something you've never told the group", "your biggest regret this year",
+    "a lie you're currently telling someone", "the last thing you deleted so no one would see it",
+    "a crush you've never admitted to", "something embarrassing only your phone knows",
+    "the messiest part of your love life", "a grudge you're still holding",
+    "something you do that you'd deny if asked", "the last thing you cried about in private",
+    "a secret you found out about someone else", "your most controlled online persona",
+    "something you've snooped on before", "a time you faked being okay",
+    "the riskiest thing you've ever sent in a message", "your most overused excuse",
+    "a moment you wish you could redo", "something about you that would surprise this group",
+    "your most embarrassing search history category", "a time you got caught doing something you shouldn't",
+    "the last thing you exaggerated about yourself", "a feeling you've hidden from everyone here",
+    "something petty you've done recently", "the truth behind a story you've told before",
+    "a person here you've talked about behind their back", "your biggest insecurity",
+    "the last promise you broke", "something you do only when no one's watching"
+  ];
+
+  const genTruthOpenersNormal = [
+    "What's {topic}?",
+    "Tell us about {topic}.",
+    "Be honest — what's {topic}?",
+    "If you had to share one thing, what would {topic} be?",
+    "Without overthinking it, what's {topic}?",
+    "Quick — what's the first thing that comes to mind for {topic}?",
+    "What's a story behind {topic}?",
+    "How would you describe {topic} to someone who's never met you?"
+  ];
+
+  const genTruthOpenersExtreme = [
+    "Be honest — what's {topic}?",
+    "Tell the truth: what's {topic}?",
+    "No lying — what's {topic}?",
+    "What's {topic}, and why haven't you shared it before?",
+    "If you had to come clean, what's {topic}?",
+    "What's {topic} that you've been avoiding talking about?",
+    "Off the record — what's {topic}?",
+    "What's {topic} that would change how people see you?"
+  ];
+
+  const genDareActionsNormal = [
+    "Do your best impression of {target} for 20 seconds.",
+    "Sing the next sentence you say instead of speaking it.",
+    "Talk like {accent} until your next turn.",
+    "Let {target} pick a silly nickname for you for the rest of the game.",
+    "Do {count} jumping jacks while listing your favorite foods.",
+    "Act out {scenario} using only gestures.",
+    "Try to make {target} laugh in the next 30 seconds without touching them.",
+    "Hold a conversation for one minute only using questions.",
+    "Do your most dramatic reaction to {scenario}.",
+    "Speak in rhyme for your next two turns.",
+    "Let the group pick an object — do your best commercial pitching it.",
+    "Walk like {character} until your next turn.",
+    "Do an impression of {target} answering the phone.",
+    "Strike your best superhero pose and hold it for 10 seconds.",
+    "Pretend to be a tour guide showing the group around the room."
+  ];
+
+  const genDareActionsExtreme = [
+    "Let {target} look through your camera roll for 20 seconds.",
+    "Read your last text message out loud, word for word.",
+    "Let {target} send a message from your phone (group decides what it says).",
+    "Confess {scenario} to the group, no skipping details.",
+    "Do your best impression of {target}'s texting style.",
+    "Show the group the last thing you searched for online.",
+    "Let {target} pick your profile picture for the next hour.",
+    "Re-enact {scenario} as a dramatic monologue.",
+    "Let the group rename one app on your phone — you can't change it back tonight.",
+    "Call or message someone and say something the group decides (nothing harmful).",
+    "Admit the last white lie you told and who you told it to.",
+    "Let {target} read your most recent saved notes or drafts (skip anything truly private).",
+    "Do a dramatic reading of your last argument, playing both people.",
+    "Reveal which person in this room you'd swap a secret with, and why.",
+    "Let {target} ask you one question you have to answer 100% honestly."
+  ];
+
+  const genAccents = [
+    "a pirate", "a robot", "royalty", "a news anchor", "a game show host",
+    "a movie villain", "a toddler", "an old-timey radio host"
+  ];
+
+  const genCharacters = [
+    "a robot running out of battery", "someone walking on hot sand",
+    "a penguin", "a zombie", "someone in slow motion", "a marching soldier",
+    "a cat stalking something", "someone who just won the lottery"
+  ];
+
+  const genScenarios = [
+    "your most awkward first impression of someone",
+    "the last time you panicked over nothing",
+    "a time you said the wrong name to someone",
+    "the last time you tripped or embarrassed yourself in public",
+    "a moment you wish no one saw",
+    "the last time you got caught talking about someone",
+    "a time you pretended to understand something you didn't",
+    "the last time you overreacted to something small",
+    "a moment you laughed at the worst possible time",
+    "the last time you sent a message to the wrong person"
+  ];
+
+  const genCounts = ["5", "8", "10", "12", "15"];
+
+  function pickRandomFrom(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function fillTemplate(template) {
+    let target = 'the person on your left';
+    if (mode === 'group' && players.length > 1) {
+      const others = players.filter((_, i) => i !== currentPlayerIndex);
+      target = pickRandomFrom(others);
+    } else if (mode === 'group' && players.length === 1) {
+      target = players[0];
+    }
+    return template
+      .replace(/{topic}/g, pickRandomFrom(intensity === 'extreme' ? genTopicsExtreme : genTopicsNormal))
+      .replace(/{target}/g, target)
+      .replace(/{accent}/g, pickRandomFrom(genAccents))
+      .replace(/{character}/g, pickRandomFrom(genCharacters))
+      .replace(/{scenario}/g, pickRandomFrom(genScenarios))
+      .replace(/{count}/g, pickRandomFrom(genCounts));
+  }
+
+  function generatePrompt(type) {
+    if (type === 'truth') {
+      const openers = intensity === 'extreme' ? genTruthOpenersExtreme : genTruthOpenersNormal;
+      return fillTemplate(pickRandomFrom(openers));
+    } else {
+      const actions = intensity === 'extreme' ? genDareActionsExtreme : genDareActionsNormal;
+      return fillTemplate(pickRandomFrom(actions));
+    }
+  }
+
+  // ---------- State ----------
+  let intensity = 'normal'; // 'normal' | 'extreme'
+  let mode = null; // 'solo' | 'group'
+  let players = [];
+  let currentPlayerIndex = -1;
+  let usedTruths = [];
+  let usedDares = [];
+
+  // ---------- Navigation ----------
+  function goTo(screen) {
+    document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+    document.getElementById('screen-' + screen).classList.add('active');
+  }
+
+  function selectIntensity(level) {
+    intensity = level;
+    if (mode === 'solo') {
+      resetUsedLists();
+      enterGame();
+    } else {
+      resetUsedLists();
+      pickRandomPlayer();
+      enterGame();
+    }
+  }
+
+  function selectMode(m) {
+    mode = m;
+    if (m === 'solo') {
+      players = ['You'];
+      currentPlayerIndex = 0;
+      goTo('intensity');
+    } else {
+      players = [];
+      renderPlayerList();
+      goTo('setup');
+    }
+  }
+
+  function goToIntensityFromSetup() {
+    if (players.length < 2) return;
+    goTo('intensity');
+  }
+
+  function goBackFromIntensity() {
+    if (mode === 'group') {
+      goTo('setup');
+    } else {
+      goTo('mode');
+    }
+  }
+
+  // ---------- Group setup ----------
+  function addPlayer() {
+    const input = document.getElementById('player-name');
+    const name = input.value.trim();
+    if (!name) return;
+    players.push(name);
+    input.value = '';
+    renderPlayerList();
+    input.focus();
+  }
+
+  function removePlayer(index) {
+    players.splice(index, 1);
+    renderPlayerList();
+  }
+
+  function renderPlayerList() {
+    const list = document.getElementById('player-list');
+    list.innerHTML = '';
+    if (players.length === 0) {
+      const hint = document.createElement('div');
+      hint.className = 'empty-hint';
+      hint.textContent = 'No players yet — add at least 2 to start.';
+      list.appendChild(hint);
+    } else {
+      players.forEach((name, i) => {
+        const li = document.createElement('li');
+        const span = document.createElement('span');
+        span.textContent = name;
+        const btn = document.createElement('button');
+        btn.textContent = '✕';
+        btn.setAttribute('aria-label', 'Remove ' + name);
+        btn.onclick = () => removePlayer(i);
+        li.appendChild(span);
+        li.appendChild(btn);
+        list.appendChild(li);
+      });
+    }
+    document.getElementById('start-group-btn').disabled = players.length < 2;
+  }
+
+  // ---------- Game ----------
+  function resetUsedLists() {
+    usedTruths = [];
+    usedDares = [];
+  }
+
+  function pickRandomPlayer() {
+    let idx = Math.floor(Math.random() * players.length);
+    // avoid same player twice in a row if more than one player
+    if (players.length > 1 && idx === currentPlayerIndex) {
+      idx = (idx + 1) % players.length;
+    }
+    currentPlayerIndex = idx;
+  }
+
+  function enterGame() {
+    updateCurrentPlayerLabel();
+    const badge = document.getElementById('game-intensity-badge');
+    badge.textContent = intensity === 'extreme' ? '🔥 Extreme mode' : '😄 Normal mode';
+    badge.className = 'mode-badge ' + intensity;
+    document.getElementById('choice-grid').style.display = 'grid';
+    document.getElementById('prompt-card').style.display = 'none';
+    document.getElementById('next-row').style.display = 'none';
+    goTo('game');
+  }
+
+  function updateCurrentPlayerLabel() {
+    const label = document.getElementById('current-player');
+    if (mode === 'solo') {
+      label.textContent = "Your turn — Truth or Dare?";
+    } else {
+      label.textContent = players[currentPlayerIndex] + "'s turn — Truth or Dare?";
+    }
+  }
+
+  function pickPrompt(list, used) {
+    if (used.length >= list.length) {
+      used.length = 0; // reset once exhausted
+    }
+    let idx;
+    do {
+      idx = Math.floor(Math.random() * list.length);
+    } while (used.includes(idx));
+    used.push(idx);
+    return list[idx];
+  }
+
+  // Tracks recently-generated prompts to avoid back-to-back duplicates
+  let recentGenerated = [];
+  const MAX_RECENT_GENERATED = 25;
+
+  function pickPromptOrGenerate(curatedList, used, type) {
+    // First pass through the curated list: always prefer fresh curated prompts.
+    if (used.length < curatedList.length) {
+      return pickPrompt(curatedList, used);
+    }
+    // Curated pool exhausted for this pass — generate a fresh combination.
+    let prompt;
+    let attempts = 0;
+    do {
+      prompt = generatePrompt(type);
+      attempts++;
+    } while (recentGenerated.includes(prompt) && attempts < 10);
+    recentGenerated.push(prompt);
+    if (recentGenerated.length > MAX_RECENT_GENERATED) {
+      recentGenerated.shift();
+    }
+    // Occasionally allow curated prompts to resurface too, once in a while
+    if (Math.random() < 0.15) {
+      used.length = 0;
+      return pickPrompt(curatedList, used);
+    }
+    return prompt;
+  }
+
+  function showPrompt(type) {
+    const card = document.getElementById('prompt-card');
+    const tag = document.getElementById('prompt-tag');
+    const text = document.getElementById('prompt-text');
+
+    let prompt;
+    if (type === 'truth') {
+      const pool = intensity === 'extreme' ? truthsExtreme : truthsNormal;
+      prompt = pickPromptOrGenerate(pool, usedTruths, 'truth');
+      tag.textContent = 'Truth';
+      tag.className = 'prompt-tag truth';
+      card.className = 'prompt-card truth-bg';
+    } else {
+      const pool = intensity === 'extreme' ? daresExtreme : daresNormal;
+      prompt = pickPromptOrGenerate(pool, usedDares, 'dare');
+      tag.textContent = 'Dare';
+      tag.className = 'prompt-tag dare';
+      card.className = 'prompt-card dare-bg';
+    }
+
+    text.textContent = prompt;
+    card.style.display = 'flex';
+    document.getElementById('choice-grid').style.display = 'none';
+    document.getElementById('next-row').style.display = 'flex';
+  }
+
+  function nextTurn() {
+    if (mode === 'group') {
+      pickRandomPlayer();
+    }
+    updateCurrentPlayerLabel();
+    document.getElementById('choice-grid').style.display = 'grid';
+    document.getElementById('prompt-card').style.display = 'none';
+    document.getElementById('next-row').style.display = 'none';
+  }
+
+  // init
+  renderPlayerList();
+</script>
+
+</body>
+</html>
